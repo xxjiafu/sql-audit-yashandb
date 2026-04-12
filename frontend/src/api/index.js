@@ -29,3 +29,14 @@ api.interceptors.response.use(
 export const login = (data) => api.post('/auth/login', data)
 export const register = (data) => api.post('/auth/register', data)
 export const getCurrentUser = () => api.get('/auth/me')
+
+export const getWorkOrderList = (page, pageSize = 10) =>
+  api.get('/workorders', { params: { page, page_size: pageSize } })
+
+export const getWorkOrder = (id) => api.get(`/workorders/${id}`)
+
+export const createWorkOrder = (data) => api.post('/workorders', data)
+
+export const updateWorkOrder = (id, data) => api.put(`/workorders/${id}`, data)
+
+export const deleteWorkOrder = (id) => api.delete(`/workorders/${id}`)
