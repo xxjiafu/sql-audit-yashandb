@@ -13,11 +13,11 @@ import (
 )
 
 type AuthService struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 func NewAuthService(db *gorm.DB) *AuthService {
-	return &AuthService{db: db}
+	return &AuthService{DB: db}
 }
 
 type Claims struct {
@@ -39,7 +39,7 @@ func (s *AuthService) Register(username, password string) (*models.User, error) 
 		Role:     models.RoleDeveloper,
 	}
 
-	result := s.db.Create(user)
+	result := s.DB.Create(user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -49,7 +49,7 @@ func (s *AuthService) Register(username, password string) (*models.User, error) 
 
 func (s *AuthService) Login(username, password string) (string, error) {
 	var user models.User
-	result := s.db.Where("username = ?", username).First(&user)
+	result := s.DB.Where("username = ?", username).First(&user)
 	if result.Error != nil {
 		return "", errors.New("用户不存在")
 	}

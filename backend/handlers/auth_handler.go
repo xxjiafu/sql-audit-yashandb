@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"sql-audit/models"
 	"sql-audit/services"
 )
 
@@ -67,4 +68,33 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		"username": username,
 		"role":     role,
 	})
+}
+
+func (h *AuthHandler) ApplyRole(c *gin.Context) {
+	userID := services.GetUserID(c)
+
+	var req struct {
+		ApplyRole string `json:"apply_role" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		return
+	}
+
+	if req.ApplyRole != models.RoleLeader && req.ApplyRole != models.RoleDBA {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的角色"})
+		return
+	}
+
+	result := h.authService.DB.Model(&models.User{}).Where("id = ?", userID).Updates(map[string]interface{}{
+		"apply_role":   req.ApplyRole,
+		"apply_status": models.ApplyStatusPending,
+	})
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "申请已提交"})
 }

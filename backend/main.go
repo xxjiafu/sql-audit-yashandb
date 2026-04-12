@@ -26,6 +26,7 @@ func main() {
 
 	authService := services.NewAuthService(database.DB)
 	authHandler := handlers.NewAuthHandler(authService)
+	adminHandler := handlers.NewAdminHandler(database.DB)
 
 	r.POST("/api/auth/register", authHandler.Register)
 	r.POST("/api/auth/login", authHandler.Login)
@@ -34,6 +35,16 @@ func main() {
 	authorized.Use(middleware.JWTAuth())
 	{
 		authorized.GET("/auth/me", authHandler.GetCurrentUser)
+		authorized.POST("/auth/apply-role", authHandler.ApplyRole)
+	}
+
+	admin := r.Group("/api/admin")
+	admin.Use(middleware.JWTAuth())
+	{
+		admin.POST("/users", adminHandler.CreateUser)
+		admin.GET("/users", adminHandler.ListUsers)
+		admin.PUT("/users/:id/role", adminHandler.UpdateUserRole)
+		admin.PUT("/users/:id/apply", adminHandler.HandleApply)
 	}
 
 	r.Run(":" + cfg.ServerPort)
