@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"sql-audit/models"
 	"sql-audit/services"
@@ -57,6 +58,13 @@ func (h *WorkOrderHandler) Create(c *gin.Context) {
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
+	}
+
+	auditService := services.NewAuditService(h.db)
+	if err := auditService.AuditAndSave(workOrder); err != nil {
+		log.Printf("自动审核错误: %v", err)
+	} else {
+		h.db.Save(workOrder)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "工单创建成功", "id": workOrder.ID})
