@@ -4,6 +4,9 @@ import (
 	"log"
 	"sql-audit/config"
 	"sql-audit/database"
+	"sql-audit/handlers"
+	"sql-audit/middleware"
+	"sql-audit/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,5 +23,18 @@ func main() {
 	}
 
 	r := gin.Default()
+
+	authService := services.NewAuthService(database.DB)
+	authHandler := handlers.NewAuthHandler(authService)
+
+	r.POST("/api/auth/register", authHandler.Register)
+	r.POST("/api/auth/login", authHandler.Login)
+
+	authorized := r.Group("/api")
+	authorized.Use(middleware.JWTAuth())
+	{
+		authorized.GET("/auth/me", authHandler.GetCurrentUser)
+	}
+
 	r.Run(":" + cfg.ServerPort)
 }
