@@ -1,0 +1,34 @@
+package database
+
+import (
+	"fmt"
+	"sql-audit/config"
+	"sql-audit/models"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+var DB *gorm.DB
+
+func Init(cfg *config.Config) error {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+
+	DB = db
+	return nil
+}
+
+func Migrate() error {
+	return DB.AutoMigrate(
+		&models.User{},
+		&models.WorkOrder{},
+		&models.AuditRule{},
+		&models.AuditLog{},
+	)
+}
