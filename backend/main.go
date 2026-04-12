@@ -53,6 +53,17 @@ func main() {
 		admin.PUT("/users/:id/apply", adminHandler.HandleApply)
 	}
 
+	adminWorkOrders := r.Group("/api/admin/workorders")
+	adminWorkOrders.Use(middleware.JWTAuth())
+	{
+		adminWorkOrders.GET("", adminHandler.ListAllWorkOrders)
+		adminWorkOrders.PUT("/:id/leader-approve", adminHandler.LeaderApprove)
+		adminWorkOrders.PUT("/:id/dba-approve", adminHandler.DBAApprove)
+		adminWorkOrders.PUT("/:id/reject", adminHandler.RejectWorkOrder)
+		adminWorkOrders.PUT("/:id/execute", adminHandler.ExecuteWorkOrder)
+		adminWorkOrders.PUT("/:id/schedule", adminHandler.ScheduleWorkOrder)
+	}
+
 	workorders := r.Group("/api/workorders")
 	workorders.Use(middleware.JWTAuth())
 	{
