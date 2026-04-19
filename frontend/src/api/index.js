@@ -43,7 +43,7 @@ export const deleteWorkOrder = (id) => api.delete(`/workorders/${id}`)
 
 export const getAdminWorkOrderList = (params) => api.get('/admin/workorders', { params })
 
-export const getAdminWorkOrder = (id) => api.get(`/workorders/${id}`)
+export const getAdminWorkOrder = (id) => api.get(`/admin/workorders/${id}`)
 
 export const leaderApprove = (id) => api.put(`/admin/workorders/${id}/leader-approve`)
 
@@ -54,9 +54,20 @@ export const rejectWorkOrder = (id, data) => api.put(`/admin/workorders/${id}/re
 export const executeWorkOrder = (id) => api.put(`/admin/workorders/${id}/execute`)
 
 export const scheduleWorkOrder = (id, data) => api.put(`/admin/workorders/${id}/schedule`, data)
+export const deleteAdminWorkOrder = (id) => api.delete(`/admin/workorders/${id}`)
 
 export const getUserList = () => api.get('/admin/users')
 
+export const createUser = (data) => api.post('/admin/users', data)
+
 export const updateUserRole = (id, role) => api.put(`/admin/users/${id}/role`, { role })
 
+export const updateUserPassword = (id, password) => api.put(`/admin/users/${id}/password`, { password })
+
+export const deleteUser = (id) => api.delete(`/admin/users/${id}`)
+
 export const handleUserApply = (id, approved, role) => api.put(`/admin/users/${id}/apply`, { approved, role })
+
+export const getDBConfig = () => api.get('/admin/db-config')
+export const saveDBConfig = (data) => api.post('/admin/db-config', data)
+export const deleteDBConfig = (id) => api.delete(`/admin/db-config/${id}`)

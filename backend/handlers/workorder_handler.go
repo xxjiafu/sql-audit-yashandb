@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
 	"sql-audit/models"
 	"sql-audit/services"
@@ -22,8 +21,9 @@ func NewWorkOrderHandler(db *gorm.DB) *WorkOrderHandler {
 type CreateWorkOrderRequest struct {
 	Title         string  `json:"title" binding:"required"`
 	SQLContent    string  `json:"sql_content"`
-	FileURL       string  `json:"file_url"`
 	ScheduledTime *string `json:"scheduled_time"`
+	TargetDBID    int64   `json:"target_db_id"`
+	ExecutionUser string  `json:"execution_user"`
 }
 
 func (h *WorkOrderHandler) Create(c *gin.Context) {
@@ -35,17 +35,18 @@ func (h *WorkOrderHandler) Create(c *gin.Context) {
 		return
 	}
 
-	if req.SQLContent == "" && req.FileURL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "SQL内容或文件不能为空"})
+	if req.SQLContent == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "SQL内容不能为空"})
 		return
 	}
 
-	workOrder := &models.WorkOrder{
-		Title:      req.Title,
-		SQLContent: req.SQLContent,
-		FileURL:    req.FileURL,
-		CreatorID:  userID,
-		Status:     models.StatusPending,
+workOrder := &models.WorkOrder{
+		Title:         req.Title,
+		SQLContent:    req.SQLContent,
+		CreatorID:     userID,
+		TargetDBID:    req.TargetDBID,
+		ExecutionUser: req.ExecutionUser,
+		Status:       models.StatusPending,
 	}
 
 	if req.ScheduledTime != nil {
@@ -62,10 +63,9 @@ func (h *WorkOrderHandler) Create(c *gin.Context) {
 
 	auditService := services.NewAuditService(h.db)
 	if err := auditService.AuditAndSave(workOrder); err != nil {
-		log.Printf("自动审核错误: %v", err)
-	} else {
-		h.db.Save(workOrder)
+		return
 	}
+	h.db.Save(workOrder)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "工单创建成功", "id": workOrder.ID})
 }
@@ -114,6 +114,9 @@ func (h *WorkOrderHandler) Get(c *gin.Context) {
 		return
 	}
 
+	// SQL内容区域只显示用户填写的内容
+	// 即使SQL为空也不读取文件显示，文件只提供下载
+
 	c.JSON(http.StatusOK, workOrder)
 }
 
@@ -128,13 +131,16 @@ func (h *WorkOrderHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if workOrder.CreatorID != userID {
+	role := services.GetUserRole(c)
+	// 创建者本人、管理员、DBA都可以修改
+	if workOrder.CreatorID != userID && role != models.RoleAdmin && role != models.RoleDBA {
 		c.JSON(http.StatusForbidden, gin.H{"error": "无权限修改此工单"})
 		return
 	}
 
-	if workOrder.Status != models.StatusPending {
-		c.JSON(http.StatusForbidden, gin.H{"error": "只能修改待审核的工单"})
+	// 只要不是已经执行成功，都允许修改
+	if workOrder.Status == models.StatusExecuted {
+		c.JSON(http.StatusForbidden, gin.H{"error": "已执行成功的工单不能修改"})
 		return
 	}
 
@@ -144,17 +150,20 @@ func (h *WorkOrderHandler) Update(c *gin.Context) {
 		return
 	}
 
-	workOrder.Title = req.Title
-	workOrder.SQLContent = req.SQLContent
-	workOrder.FileURL = req.FileURL
+	updates := map[string]interface{}{
+		"title":          req.Title,
+		"sql_content":    req.SQLContent,
+		"target_db_id":   req.TargetDBID,
+		"execution_user": req.ExecutionUser,
+	}
 
 	if req.ScheduledTime != nil {
 		if t, err := time.Parse("2006-01-02 15:04:05", *req.ScheduledTime); err == nil {
-			workOrder.ScheduledTime = &t
+			updates["scheduled_time"] = t
 		}
 	}
 
-	h.db.Save(&workOrder)
+	h.db.Model(&workOrder).Updates(updates)
 
 	c.JSON(http.StatusOK, gin.H{"message": "工单更新成功"})
 }

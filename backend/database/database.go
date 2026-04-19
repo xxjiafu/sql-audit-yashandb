@@ -5,17 +5,16 @@ import (
 	"sql-audit/config"
 	"sql-audit/models"
 
-	"gorm.io/driver/mysql"
+	yasdb "git.yasdb.com/go/gorm-yasdb"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
 func Init(cfg *config.Config) error {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
+	dsn := fmt.Sprintf("sqlaudit/sqlaudit@192.168.23.87:1688")
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(yasdb.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return err
 	}

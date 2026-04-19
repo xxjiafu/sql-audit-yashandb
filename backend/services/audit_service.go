@@ -28,9 +28,14 @@ func (s *AuditService) Audit(sqlContent string) (*AuditResult, error) {
 	s.db.Where("is_enabled = ?", true).Find(&rules)
 
 	for _, rule := range rules {
-		matched, err := regexp.MatchString(rule.Pattern, sqlContent)
+		re, err := regexp.Compile(rule.Pattern)
 		if err != nil {
 			continue
+		}
+
+		matched := re.FindString(sqlContent) != ""
+		if rule.InvertMatch {
+			matched = !matched
 		}
 
 		if matched {
@@ -47,11 +52,13 @@ func (s *AuditService) Audit(sqlContent string) (*AuditResult, error) {
 }
 
 func (s *AuditService) AuditAndSave(workOrder *models.WorkOrder) error {
-	if workOrder.SQLContent == "" {
+	sqlContent := workOrder.SQLContent
+
+	if sqlContent == "" {
 		return nil
 	}
 
-	auditResult, err := s.Audit(workOrder.SQLContent)
+	auditResult, err := s.Audit(sqlContent)
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,8 @@ type WorkOrder struct {
 	FileURL         string     `json:"file_url" gorm:"size:500"`
 	ScheduledTime   *time.Time `json:"scheduled_time"`
 	CreatorID       int64      `json:"creator_id" gorm:"index"`
+	TargetDBID      int64      `json:"target_db_id" gorm:"index"`
+	ExecutionUser   string     `json:"execution_user" gorm:"size:100"`
 	Status          string     `json:"status" gorm:"size:20;default:pending"`
 	RejectReason    string     `json:"reject_reason" gorm:"size:500"`
 	AutoCheckResult string     `json:"auto_check_result" gorm:"type:json"`
